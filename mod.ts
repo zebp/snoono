@@ -2,6 +2,8 @@ import { ServerRequest } from "https://deno.land/std@0.86.0/http/server.ts";
 import { Authorization, authorize } from "./authorization.ts";
 import { buildUrl, serve } from "./deps.ts";
 
+export type { Authorization };
+
 export enum OAuthScope {
     Read = "read",
     History = "history",
@@ -32,12 +34,12 @@ export interface AuthorizationOptions {
 
 export class RedditClient {
     public readonly accessToken: string;
-    private expiresIn: number;
+    private expiresAt: number;
     private refreshToken?: string;
 
-    private constructor(authorization: Authorization) {
+    public constructor(authorization: Authorization) {
         this.accessToken = authorization.accessToken;
-        this.expiresIn = authorization.expiresIn;
+        this.expiresAt = Date.now() + authorization.expiresIn;
         this.refreshToken = authorization.refreshToken;
     }
 
@@ -85,5 +87,26 @@ export class RedditClient {
 
         const authorization = await authorize(options.clientId, options.clientSecret, code!, options.redirectUri);
         return new RedditClient(authorization);
+    }
+
+    public async get<T>(url: string): Promise<T> {
+        await this.keepTokenAlive();
+
+        const response = await fetch(url, {
+            headers: {
+                authorization: `bearer ${this.accessToken}`
+            }
+        });
+
+        return response.json();
+    }
+
+    private async keepTokenAlive(): Promise<void> {
+        if (Date.now() < this.expiresAt) {
+            return;
+        }
+
+        // TODO: Implement!
+        throw new Error("token refreshing is unimplemented");
     }
 }
