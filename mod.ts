@@ -1,13 +1,37 @@
-import { ServerRequest } from "https://deno.land/std@0.86.0/http/server.ts";
-import { Authorization, authorize } from "./authorization.ts";
-import { buildUrl, serve } from "./deps.ts";
+import { Authorization, authorize, refreshToken as refreshAuthorization } from "./authorization.ts";
+import { buildUrl, serve, ServerRequest } from "./deps.ts";
 
 export type { Authorization };
 
 export enum OAuthScope {
+    Creddits = "creddits",
+    Modcontributors = "modcontributors",
+    Modmail = "modmail",
+    Modconfig = "modconfig",
+    Subscribe = "subscribe",
+    Structuredstyles = "structuredstyles",
+    Vote = "vote",
+    Wikiedit = "wikiedit",
+    Mysubreddits = "mysubreddits",
+    Submit = "submit",
+    Modlog = "modlog",
+    Modposts = "modposts",
+    Modflair = "modflair",
+    Save = "save",
+    Modothers = "modothers",
     Read = "read",
+    Privatemessages = "privatemessages",
+    Report = "report",
+    Identity = "identity",
+    Livemanage = "livemanage",
+    Account = "account",
+    Modtraffic = "modtraffic",
+    Wikiread = "wikiread",
+    Edit = "edit",
+    Modwiki = "modwiki",
+    Modself = "modself",
     History = "history",
-    Identity = "identity"
+    Flair = "flair",
 }
 
 export interface ServerCodeProvider {
@@ -23,7 +47,6 @@ export type ManualCodeProvider = (state: string) => Promise<string>;
 
 export type OAuthCodeProvider = ServerCodeProvider | ManualCodeProvider;
 
-
 export interface BaseAuthorizationOptions {
     clientId: string;
     clientSecret: string;
@@ -38,14 +61,16 @@ export interface AuthorizationOptions extends BaseAuthorizationOptions {
 }
 
 export class RedditClient {
-    public readonly accessToken: string;
-    private expiresAt: number;
+    public accessToken: string;
     public refreshToken?: string;
+    public scopes: OAuthScope[];
+    private expiresAt: number;
 
     public constructor(authorization: Authorization) {
         this.accessToken = authorization.accessToken;
         this.expiresAt = Date.now() + authorization.expiresIn;
         this.refreshToken = authorization.refreshToken;
+        this.scopes = authorization.scopes;
     }
 
     public static async authorizeWithOAuth(
@@ -110,11 +135,12 @@ export class RedditClient {
     }
 
     private async keepTokenAlive(): Promise<void> {
-        if (Date.now() < this.expiresAt) {
+        if (Date.now() < this.expiresAt || !this.refreshToken) {
             return;
         }
 
-        // TODO: Implement!
-        throw new Error("token refreshing is unimplemented");
+        const auth = await refreshAuthorization(this.accessToken, this.refreshToken);
+        this.accessToken = auth.accessToken;
+        this.expiresAt = Date.now() + auth.expiresIn;
     }
 }
