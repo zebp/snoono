@@ -43,7 +43,7 @@ export async function authorize(clientId: string, clientSecret: string, code: st
     };
 }
 
-export async function refreshToken(accessToken: string, refreshToken: string): Promise<Authorization> {
+export async function refreshAuthorization(accessToken: string, refreshToken: string): Promise<Authorization> {
     const url = buildUrl("https://www.reddit.com/api/v1/access_token", {
         queryParams: {
             grant_type: "refresh_token",

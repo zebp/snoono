@@ -1,7 +1,8 @@
-import { Authorization, authorize, refreshToken as refreshAuthorization } from "./authorization.ts";
 import { buildUrl, serve, ServerRequest } from "./deps.ts";
+import { Authorization, authorize, refreshAuthorization } from "./authorization.ts";
 
 export type { Authorization };
+export { authorize, refreshAuthorization};
 
 export enum OAuthScope {
     Creddits = "creddits",
