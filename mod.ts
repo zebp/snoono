@@ -7,6 +7,7 @@ export type { Authorization };
 export enum OAuthScope {
     Read = "read",
     History = "history",
+    Identity = "identity"
 }
 
 export interface ServerCodeProvider {
