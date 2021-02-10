@@ -23,12 +23,16 @@ export type ManualCodeProvider = (state: string) => Promise<string>;
 
 export type OAuthCodeProvider = ServerCodeProvider | ManualCodeProvider;
 
-export interface AuthorizationOptions {
+
+export interface BaseAuthorizationOptions {
     clientId: string;
     clientSecret: string;
     redirectUri: string;
     duration: "temporary" | "permanent";
     scopes: OAuthScope[];
+}
+
+export interface AuthorizationOptions extends BaseAuthorizationOptions {
     oauthCodeProvider: OAuthCodeProvider,
     authUrlCallback: (authUrl: string) => Promise<void>;
 }
@@ -36,7 +40,7 @@ export interface AuthorizationOptions {
 export class RedditClient {
     public readonly accessToken: string;
     private expiresAt: number;
-    private refreshToken?: string;
+    public refreshToken?: string;
 
     public constructor(authorization: Authorization) {
         this.accessToken = authorization.accessToken;
@@ -46,20 +50,9 @@ export class RedditClient {
 
     public static async authorizeWithOAuth(
         options: AuthorizationOptions,
+        state: string = Math.random().toString()
     ): Promise<RedditClient> {
-        const state = Math.random().toString();
-        const authUrl = encodeURI(buildUrl("https://www.reddit.com", {
-            path: ["api", "v1", "authorize"],
-            queryParams: {
-                client_id: options.clientId,
-                response_type: "code",
-                state,
-                redirect_uri: options.redirectUri,
-                duration: options.duration,
-                scope: options.scopes.join(" "),
-            },
-        }));
-
+        const authUrl = RedditClient.createAuthorizationUrl(options, state);
         await options.authUrlCallback(authUrl);
 
         let code: string | undefined;
@@ -88,6 +81,20 @@ export class RedditClient {
 
         const authorization = await authorize(options.clientId, options.clientSecret, code!, options.redirectUri);
         return new RedditClient(authorization);
+    }
+
+    public static createAuthorizationUrl(options: BaseAuthorizationOptions, state: string): string {
+        return encodeURI(buildUrl("https://www.reddit.com", {
+            path: ["api", "v1", "authorize"],
+            queryParams: {
+                client_id: options.clientId,
+                response_type: "code",
+                state,
+                redirect_uri: options.redirectUri,
+                duration: options.duration,
+                scope: options.scopes.join(" "),
+            },
+        }));
     }
 
     public async get<T>(url: string): Promise<T> {
