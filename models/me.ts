@@ -6,7 +6,7 @@ interface Information {
 }
 
 export class Me {
-    private readonly info: Information;
+    public readonly info: Information;
     private readonly client: RedditClient;
 
     private constructor(info: Information, client: RedditClient) {

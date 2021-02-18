@@ -65,7 +65,7 @@ export class RedditClient {
     public accessToken: string;
     public refreshToken?: string;
     public scopes: OAuthScope[];
-    private expiresAt: number;
+    public expiresAt: number;
 
     public constructor(authorization: Authorization) {
         this.accessToken = authorization.accessToken;
